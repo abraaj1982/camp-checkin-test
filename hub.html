@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الصفحة الرئيسية — MUKHAYYAM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="theme.css">
+<script src="ui.js" defer></script>
+<style>
+/* aliases kept for older inline styles in this page's script */
+:root,[data-theme=dark]{--sap-gray:var(--muted);--sap-red:var(--bad);--sap-green:var(--ok);--sap-border:var(--line);--sap-bg:var(--soft)}
+.container{padding:16px;display:flex;flex-direction:column;gap:14px;flex:1}
+.card h2{font-size:17px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+h3{font-size:13.5px;color:var(--muted);margin:18px 0 8px;font-weight:600}
+label.field{display:block;font-size:15px;font-weight:600;margin:16px 0 8px}
+.btn{margin-top:18px;width:100%}
+.btn.secondary{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
+.msg{margin-top:12px;padding:12px;border-radius:14px;font-size:14px;text-align:center;display:none}
+.msg.error{display:block;background:var(--badbg);color:var(--bad)}.msg.ok{display:block;background:var(--okbg);color:var(--ok)}
+.hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+.who-badge{display:inline-flex;margin-top:8px;padding:4px 12px;border-radius:999px;background:var(--soft);color:var(--brand);font-weight:600;font-size:13px}
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.tile{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:16px 14px;background:var(--card);min-height:116px;transition:border-color .15s,transform .05s}
+.tile:hover{border-color:var(--brand)}.tile:active{transform:translateY(1px)}
+.tile .i{width:42px;height:42px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:21px}
+.tile .t{font-weight:700;font-size:15px;line-height:1.35}
+.tile .s{font-size:12.5px;color:var(--brand);font-weight:600;margin-top:auto}
+.tile.soon{opacity:.55;cursor:default}.tile.soon .s{color:var(--muted)}
+/* users list: stacked cards (phone-first) */
+#usersListCard table,#usersListCard tbody,#usersListCard tr,#usersListCard td{display:block;width:100%}
+#usersListCard thead{display:none}
+#usersListCard tr{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;background:var(--card)}
+#usersListCard td{padding:2px 0;border:0;text-align:start;font-size:14px}
+#usersListCard td:nth-child(1){font-weight:700;font-size:15.5px}
+#usersListCard td:nth-child(2){color:var(--muted);direction:ltr;text-align:end}
+html[dir=rtl] #usersListCard td:nth-child(2){text-align:right}
+#usersListCard td:nth-child(3){color:var(--muted);font-size:13px}
+#usersListCard td:nth-child(5){padding-top:8px}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge-active{background:var(--okbg);color:var(--ok)}.badge-locked{background:var(--badbg);color:var(--bad)}.badge-disabled{background:var(--bar);color:var(--muted)}
+.rowBtn{padding:0 12px;min-height:40px;border:1px solid var(--line);border-radius:12px;font-size:13px;cursor:pointer;background:var(--card);color:var(--ink);margin:0 0 6px 6px;font-family:inherit}
+.rowBtn:hover{border-color:var(--brand)}
+.rowBtn.danger{color:var(--bad);border-color:var(--bad)}
+/* permission tick boxes */
+.ticks{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.tick{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:14px;padding:0 12px;min-height:50px;cursor:pointer;font-size:14px;background:var(--card);color:var(--ink)}
+.tick input{width:20px;height:20px;flex:none;accent-color:var(--brand)}
+.tick.on{border-color:var(--brand);background:var(--soft)}
+.ticks.power .tick.on{border-color:#C98A1E;background:var(--warnbg)}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.preset{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:0 14px;min-height:42px;font-size:13.5px;cursor:pointer;font-family:inherit}
+.preset:hover{border-color:var(--brand)}
+.editBox{border:2px solid var(--brand);border-radius:18px;padding:16px;margin-top:14px;background:var(--note)}
+.editBox .title{font-weight:700;font-size:15px;margin-bottom:6px}
+.report{margin-top:12px;font-size:14px;line-height:1.8}.report .bad{color:var(--bad)}.report .good{color:var(--ok)}
+.pwrow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}.pwrow input{flex:1 1 220px;min-width:0}.pwrow .pwbtn{min-height:48px}
+.pwbtn{flex:none;border:1px solid var(--field);background:var(--card);color:var(--brand);border-radius:14px;padding:0 12px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.edHead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.saved{position:sticky;bottom:10px;margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--okbg);color:var(--ok);font-weight:600;text-align:center;display:none;box-shadow:var(--shadow)}.saved.show{display:block}.saved.bad{background:var(--badbg);color:var(--bad)}
+#bulletinList>div{padding:10px 0;border-top:1px solid var(--line)}#bulletinList>div:first-child{border-top:0;padding-top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hdr">
+  <div class="brand"><div class="logo">م</div><div style="min-width:0"><div class="t" id="campT"></div><div class="s" id="campS"></div></div></div>
+  <div class="tools"><button class="tool" id="themeBtn"></button><button class="tool" id="logoutBtn">خروج</button></div>
+</header>
+<section class="hero"><div class="ic" aria-hidden="true">م</div><h1>مرحباً، <span id="whoName">...</span></h1><span class="who-badge" id="whoRole"></span></section>
+
+<div class="container">
+
+  <div class="card" id="bulletinCard" style="display:none;"><h2>📢 إعلانات</h2><div id="bulletinList"></div></div>
+  <div class="card">
+    <h2>شاشاتك</h2>
+    <div class="tiles" id="tiles"></div>
+    <div class="hint" id="noTiles" style="display:none;">لا توجد شاشات مفعّلة لحسابك بعد. تواصل مع السكرتارية.</div>
+  </div>
+
+  <div id="adminArea" style="display:none;">
+
+    <div class="card" id="createCard">
+      <h2>➕ إضافة مستخدم جديد</h2>
+      <form id="createUserForm">
+        <label class="field">اسم المستخدم (للدخول) <span class="req">*</span></label>
+        <input type="text" id="newUsername" required>
+
+        <label class="field">كلمة المرور <span class="req">*</span></label>
+        <div id="newPasswordBox"></div>
+        <div class="hint">6 أحرف على الأقل. «توليد» يقترح كلمة سهلة القراءة. تُشفَّر عند الحفظ ولا يمكن استرجاعها، فاحفظها قبل تسليمها.</div>
+
+        <label class="field">الاسم الكامل <span class="req">*</span></label>
+        <input type="text" id="newFullName" required>
+
+        <label class="field">قالب الصلاحيات (يمكنك تعديل العلامات بعده)</label>
+        <select id="newRole">
+          <option value="supervisor">مشرف باص</option>
+          <option value="camp_leader">قائد المخيم</option>
+          <option value="shirts_coordinator">مسؤول القمصان</option>
+          <option value="doctor">طبيب</option>
+          <option value="nutrition_officer">لجنة التغذية</option>
+          <option value="custody_officer">الأمانات</option>
+          <option value="printer">الطباعة</option>
+          <option value="support">دعم فني</option>
+          <option value="admin">أدمن (السكرتارية) — كل الصلاحيات</option>
+        </select>
+
+        <label class="field">رقم الباص المخصَّص (لمن يسجّل حضور باص محدد)</label>
+        <input type="text" id="newAssignedBus" placeholder="مثال: 1">
+
+        <div id="newTicksArea">
+          <h3>✅ الشاشات (ضع علامة صح على ما يحتاجه)</h3>
+          <div class="ticks" id="newScreens"></div>
+          <h3>صلاحيات خاصة</h3>
+          <div class="ticks power" id="newPowers"></div>
+          <h3>اللجان</h3>
+          <div class="ticks" id="newCommittees"></div>
+        </div>
+
+        <button type="submit" class="btn" id="createBtn">إنشاء الحساب</button>
+      </form>
+      <div class="msg" id="createMsg"></div>
+    </div>
+
+    <div class="card" id="usersListCard">
+      <h2>📋 المستخدمون الحاليون</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>المستخدم</th>
+            <th>الصلاحيات</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="usersListBody">
+          <tr><td colspan="5" style="text-align:center; color: var(--sap-gray);">جاري التحميل...</td></tr>
+        </tbody>
+      </table>
+      <div class="msg" id="usersListMsg"></div>
+      <div id="editBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>🔎 فحص شيت الطلاب</h2>
+      <div class="hint">يتأكد أن الأعمدة موجودة، ولا توجد أرقام طلاب مكررة أو طلاب بلا باص. استخدمه بعد أي تحديث لشيت الطلاب.</div>
+      <button type="button" class="btn secondary" id="checkSheetBtn">فحص الآن</button>
+      <div class="report" id="sheetReport"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3a_DmDLkdzW6WDqImAkNLaBCocpSFK_9xsUa0MuuhoXH3WWza2zaP0JUM9_pnZIVxHQ/exec';
+
+const token = sessionStorage.getItem('mukhayyam_token');
+if (!token) { window.location.href = 'login.html'; }
+
+let fullName = sessionStorage.getItem('mukhayyam_fullName') || '';
+let role = sessionStorage.getItem('mukhayyam_role') || '';
+let permissions = [];
+try { permissions = JSON.parse(sessionStorage.getItem('mukhayyam_permissions') || '[]'); } catch (e) {}
+
+const roleLabels = {
+  admin: 'السكرتارية',
+  supervisor: 'مشرف باص',
+  camp_leader: 'قائد المخيم',
+  shirts_coordinator: 'مسؤول القمصان',
+  doctor: 'طبيب',
+  nutrition_officer: 'لجنة التغذية',
+  custody_officer: 'الأمانات',
+  printer: 'الطباعة',
+  support: 'دعم فني'
+};
+// Starting tick-boxes for each template (the server stores whatever is ticked).
+const ROLE_PRESETS = {
+  supervisor: ['checkin'],
+  camp_leader: ['dashboard'],
+  shirts_coordinator: ['shirts'],
+  doctor: ['medical'],
+  nutrition_officer: ['nutrition'],
+  custody_officer: ['custody'],
+  printer: ['print'],
+  support: ['support'],
+  admin: []
+};
+// Screens that already exist (others show as "قريباً").
+const SCREEN_LINKS = {
+  checkin: 'supervisor.html',
+  dashboard: 'leader.html',
+  stats: 'leader.html',
+  print: 'wristbands.html',
+  custody: 'custody.html',
+  medical: 'medical.html',
+  nutrition: 'nutrition.html',
+  announce: 'media.html',
+  results: 'media.html',
+  verify: 'media.html',
+  shirts: 'shirt_distribution.html'
+};
+const SCREEN_NAMES = {
+  checkin: 'تسجيل الحضور', dashboard: 'لوحة المعلومات', committee: 'مصاريف اللجنة',
+  finance: 'اعتماد المصاريف', shirts: 'توزيع القمصان', team: 'الفريق والإعلانات',
+  users: 'المستخدمون', results: 'إدخال النتائج', medical: 'الصفحة الطبية', print: 'طباعة الأساور والكشوف', custody: 'الأمانات والانسحاب', nutrition: 'التغذية', announce: 'الإعلامية', verify: 'التحقق من النتائج'
+};
+
+const SCREEN_ICONS = { checkin: '🚌', dashboard: '📍', stats: '📊', shirts: '👕', print: '🖨️', custody: '🔐', medical: '⚕️', nutrition: '🍽️', announce: '📣', results: '🏆', verify: '✅', team: '👥' };
+
+// dark / light (same preference as every other screen)
+(function themeInit() {
+  let th = 'light'; try { th = localStorage.getItem('mk_pref_theme') || 'light'; } catch (e) {}
+  const btn = document.getElementById('themeBtn');
+  const paint = () => { document.documentElement.dataset.theme = th; btn.textContent = th === 'light' ? '🌙 داكن' : '☀ فاتح'; };
+  btn.addEventListener('click', () => { th = th === 'light' ? 'dark' : 'light'; try { localStorage.setItem('mk_pref_theme', th); } catch (e) {} paint(); });
+  paint();
+})();
+
+function can(key) { return permissions.indexOf('*') !== -1 || permissions.indexOf(key) !== -1; }
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.clear();
+  window.location.href = 'login.html';
+});
+
+async function api(payload) {
+  const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(Object.assign({ token: token }, payload)) });
+  return res.json();
+}
+
+function setMsg(el, text, cls) { el.textContent = text; el.className = 'msg' + (cls ? ' ' + cls : ''); }
+
+// ---------------- header + tiles ----------------
+
+function renderHeader() {
+  document.getElementById('whoName').textContent = fullName;
+  document.getElementById('whoRole').textContent = roleLabels[role] || role;
+}
+
+function renderTiles() {
+  const box = document.getElementById('tiles');
+  box.innerHTML = '';
+  const keys = Object.keys(SCREEN_NAMES).filter(k => k !== 'users' && HIDDEN_PERMS.indexOf(k) === -1 && can(k));
+  const seen = {};
+  keys.forEach(k => {
+    if (SCREEN_LINKS[k]) { if (seen[SCREEN_LINKS[k]]) return; seen[SCREEN_LINKS[k]] = true; }
+    const a = document.createElement(SCREEN_LINKS[k] ? 'a' : 'div');
+    a.className = 'tile' + (SCREEN_LINKS[k] ? '' : ' soon');
+    if (SCREEN_LINKS[k]) a.href = SCREEN_LINKS[k];
+    const ic = document.createElement('div'); ic.className = 'i'; ic.textContent = SCREEN_ICONS[k] || '▣'; a.appendChild(ic);
+    const t = document.createElement('div'); t.className = 't'; t.textContent = SCREEN_NAMES[k];
+    const s = document.createElement('div'); s.className = 's'; s.textContent = SCREEN_LINKS[k] ? 'فتح' : 'قريباً';
+    a.appendChild(t); a.appendChild(s);
+    box.appendChild(a);
+  });
+  if (can('manage') || can('support')) {
+    const a = document.createElement('a');
+    a.className = 'tile'; a.href = '#adminArea';
+    a.innerHTML = '<div class="i">👥</div><div class="t"></div><div class="s">المستخدمون والصلاحيات</div>';
+    a.querySelector('.t').textContent = can('manage') ? 'إدارة المستخدمين' : 'الدعم الفني';
+    box.appendChild(a);
+  }
+  document.getElementById('noTiles').style.display = box.children.length ? 'none' : 'block';
+  document.getElementById('adminArea').style.display = (can('manage') || can('support')) ? 'block' : 'none';
+  // Support staff help with passwords/unlock only: no creating users, no editing permissions.
+  document.getElementById('createCard').style.display = can('manage') ? 'block' : 'none';
+}
+
+// ---------------- tick-box helpers ----------------
+
+// Renders a list of {key,label} as tick boxes into `container`; returns nothing.
+// `selected` is an array of keys that start ticked.
+function renderTicks(container, items, selected) {
+  container.innerHTML = '';
+  items.forEach(item => {
+    const lab = document.createElement('label');
+    lab.className = 'tick' + (selected.indexOf(item.key) !== -1 ? ' on' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = item.key;
+    cb.checked = selected.indexOf(item.key) !== -1;
+    cb.addEventListener('change', () => lab.classList.toggle('on', cb.checked));
+    const span = document.createElement('span');
+    span.textContent = item.label;
+    lab.appendChild(cb); lab.appendChild(span);
+    container.appendChild(lab);
+  });
+}
+
+function ticked(container) {
+  return Array.prototype.slice.call(container.querySelectorAll('input:checked')).map(i => i.value);
+}
+
+let catalog = null; // { permissions:[{key,label,group}], committees:[{id,name,type}] }
+
+async function ensureCatalog() {
+  if (catalog) return catalog;
+  const data = await api({ action: 'getCatalog' });
+  if (!data.success) throw new Error(data.error || 'تعذّر تحميل الصلاحيات');
+  catalog = data;
+  return catalog;
+}
+
+// Screens cancelled after the planning meeting (finance/budgets) are hidden from the tick-boxes.
+const HIDDEN_PERMS = ['committee', 'finance', 'approve', 'budget'];
+function screenItems() { return catalog.permissions.filter(p => p.group === 'شاشة' && HIDDEN_PERMS.indexOf(p.key) === -1).map(p => ({ key: p.key, label: p.label })); }
+function powerItems() { return catalog.permissions.filter(p => p.group !== 'شاشة' && HIDDEN_PERMS.indexOf(p.key) === -1).map(p => ({ key: p.key, label: p.label })); }
+function committeeItems() { return catalog.committees.map(c => ({ key: c.id, label: c.name })); }
+
+// ---------------- create user ----------------
+
+const form = document.getElementById('createUserForm');
+const createMsg = document.getElementById('createMsg');
+const createBtn = document.getElementById('createBtn');
+{ const pf = passwordField('newPassword', true); pf.input.required = true; document.getElementById('newPasswordBox').appendChild(pf.wrap); }
+const roleSelect = document.getElementById('newRole');
+const newScreens = document.getElementById('newScreens');
+const newPowers = document.getElementById('newPowers');
+const newCommittees = document.getElementById('newCommittees');
+
+function applyPresetToNewForm() {
+  if (!catalog) return;
+  const preset = ROLE_PRESETS[roleSelect.value] || [];
+  renderTicks(newScreens, screenItems(), preset);
+  renderTicks(newPowers, powerItems(), preset);
+  document.getElementById('newTicksArea').style.display = roleSelect.value === 'admin' ? 'none' : 'block';
+}
+roleSelect.addEventListener('change', applyPresetToNewForm);
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setMsg(createMsg, '', '');
+  createBtn.disabled = true;
+  createBtn.textContent = 'جاري الإنشاء...';
+
+  const isAdminRole = roleSelect.value === 'admin';
+  if (document.getElementById('newPassword').value.length < 6) {
+    setMsg(createMsg, '❌ كلمة المرور 6 أحرف على الأقل', 'error');
+    createBtn.disabled = false; createBtn.textContent = 'إنشاء الحساب'; return;
+  }
+  const payload = {
+    action: 'createUser',
+    username: document.getElementById('newUsername').value.trim(),
+    password: document.getElementById('newPassword').value,
+    fullName: document.getElementById('newFullName').value.trim(),
+    role: roleSelect.value,
+    assignedBus: document.getElementById('newAssignedBus').value.trim(),
+    permissions: isAdminRole ? [] : ticked(newScreens).concat(ticked(newPowers)),
+    committees: ticked(newCommittees)
+  };
+
+  try {
+    const data = await api(payload);
+    if (data.success) {
+      setMsg(createMsg, '✅ تم إنشاء الحساب. سلّم المستخدم: اسم الدخول «' + payload.username + '» وكلمة المرور «' + payload.password + '». (لن تظهر كلمة المرور مرة أخرى)', 'ok');
+      form.reset();
+      applyPresetToNewForm();
+      renderTicks(newCommittees, committeeItems(), []);
+    } else {
+      setMsg(createMsg, '❌ ' + (data.error || 'فشل الإنشاء'), 'error');
+    }
+  } catch (err) {
+    setMsg(createMsg, 'تعذّر الاتصال بالخادم: ' + err.message, 'error');
+  } finally {
+    createBtn.disabled = false;
+    createBtn.textContent = 'إنشاء الحساب';
+  }
+  loadUsersList();
+});
+
+// ---------------- users list / edit access / reset / unlock ----------------
+
+const usersListBody = document.getElementById('usersListBody');
+const usersListMsg = document.getElementById('usersListMsg');
+const editBox = document.getElementById('editBox');
+let usersCache = [];
+
+function permSummary(u) {
+  if (u.role === 'admin') return 'كل الصلاحيات';
+  const names = (u.permissions || []).map(k => SCREEN_NAMES[k] || (catalog && (catalog.permissions.find(p => p.key === k) || {}).label) || k);
+  return names.length ? names.join('، ') : '—';
+}
+
+function cell(text) { const td = document.createElement('td'); td.textContent = text; return td; }
+
+async function loadUsersList() {
+  try {
+    const data = await api({ action: 'listUsers' });
+    if (!data.success) {
+      usersListBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--sap-red);"></td></tr>';
+      usersListBody.querySelector('td').textContent = data.error || 'فشل التحميل';
+      return;
+    }
+    usersCache = data.users;
+    if (data.users.length === 0) {
+      usersListBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--sap-gray);">لا يوجد مستخدمون</td></tr>';
+      return;
+    }
+    usersListBody.innerHTML = '';
+    data.users.forEach(u => {
+      const tr = document.createElement('tr'); tr.dataset.user = u.username;
+      tr.appendChild(cell(u.fullName));
+      tr.appendChild(cell(u.username));
+      tr.appendChild(cell(permSummary(u) + (u.assignedBus ? ' — باص ' + u.assignedBus : '')));
+
+      const tdStatus = document.createElement('td');
+      const badge = document.createElement('span');
+      if (!u.active) { badge.className = 'badge badge-disabled'; badge.textContent = 'معطَّل'; }
+      else if (u.locked) { badge.className = 'badge badge-locked'; badge.textContent = 'مقفول'; }
+      else { badge.className = 'badge badge-active'; badge.textContent = 'نشط'; }
+      tdStatus.appendChild(badge);
+      tr.appendChild(tdStatus);
+
+      const tdActions = document.createElement('td');
+      if (can('manage')) {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'rowBtn';
+        editBtn.textContent = '✏️ تعديل المستخدم';
+        editBtn.addEventListener('click', () => openEditor(u));
+        tdActions.appendChild(editBtn);
+      }
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'rowBtn';
+      resetBtn.textContent = '🔑 كلمة المرور';
+      resetBtn.addEventListener('click', () => openEditor(u, !can('manage')));
+      tdActions.appendChild(resetBtn);
+
+      if (can('manage')) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'rowBtn' + (u.active ? ' danger' : '');
+        toggleBtn.textContent = u.active ? '⛔ تعطيل' : '✅ تفعيل';
+        toggleBtn.addEventListener('click', () => setActiveFor(u, !u.active));
+        tdActions.appendChild(toggleBtn);
+      }
+
+      if (u.locked) {
+        const unlockBtn = document.createElement('button');
+        unlockBtn.className = 'rowBtn danger';
+        unlockBtn.textContent = '🔓 فك القفل';
+        unlockBtn.addEventListener('click', () => unlockAccountFor(u.username));
+        tdActions.appendChild(unlockBtn);
+      }
+      tr.appendChild(tdActions);
+      usersListBody.appendChild(tr);
+    });
+  } catch (err) {
+    usersListBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--sap-red);">تعذّر الاتصال بالخادم</td></tr>';
+  }
+}
+
+// A password input with a "show / hide" button (and optional generator).
+function passwordField(id, withGenerate) {
+  const wrap = document.createElement('div'); wrap.className = 'pwrow';
+  const inp = document.createElement('input'); inp.type = 'password'; inp.autocomplete = 'new-password'; if (id) inp.id = id;
+  inp.placeholder = '6 أحرف على الأقل';
+  const show = document.createElement('button'); show.type = 'button'; show.className = 'pwbtn'; show.textContent = '👁 إظهار';
+  show.addEventListener('click', () => { inp.type = inp.type === 'password' ? 'text' : 'password'; show.textContent = inp.type === 'password' ? '👁 إظهار' : '🙈 إخفاء'; });
+  wrap.appendChild(inp); wrap.appendChild(show);
+  if (withGenerate) {
+    const gen = document.createElement('button'); gen.type = 'button'; gen.className = 'pwbtn'; gen.textContent = '🎲 توليد';
+    gen.addEventListener('click', () => { inp.value = makePassword(); inp.type = 'text'; show.textContent = '🙈 إخفاء'; inp.dispatchEvent(new Event('input')); });
+    wrap.appendChild(gen);
+  }
+  return { wrap: wrap, input: inp };
+}
+// Easy to read aloud / type on a phone: no 0/O, 1/l/I.
+function makePassword() {
+  const chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const a = new Uint32Array(8); crypto.getRandomValues(a);
+  return Array.from(a, x => chars[x % chars.length]).join('');
+}
+
+// User file: every change saves by itself (no "save" button).
+async function openEditor(u, passwordOnly) {
+  editBox.innerHTML = '';
+  if (!passwordOnly) { try { await ensureCatalog(); } catch (err) { setMsg(usersListMsg, '❌ ' + err.message, 'error'); return; } }
+
+  const box = document.createElement('div');
+  box.className = 'editBox';
+  const head = document.createElement('div'); head.className = 'edHead';
+  const title = document.createElement('div'); title.className = 'title'; title.textContent = (passwordOnly ? 'كلمة مرور: ' : 'ملف المستخدم: ') + u.fullName;
+  const sub = document.createElement('div'); sub.className = 'hint'; sub.textContent = 'اسم الدخول: ' + u.username;
+  const close = document.createElement('button'); close.type = 'button'; close.className = 'rowBtn'; close.textContent = '✕ إغلاق';
+  close.addEventListener('click', () => { editBox.innerHTML = ''; });
+  const t2 = document.createElement('div'); t2.appendChild(title); t2.appendChild(sub);
+  head.appendChild(t2); head.appendChild(close); box.appendChild(head);
+
+  const status = document.createElement('div'); status.className = 'saved'; status.setAttribute('role', 'status');
+  const flash = (text, bad) => { status.textContent = text; status.className = 'saved show' + (bad ? ' bad' : ''); };
+
+  // ---- password (manage + support)
+  const pwSection = document.createElement('div');
+  const hp = document.createElement('h3'); hp.textContent = '🔑 تغيير كلمة المرور'; pwSection.appendChild(hp);
+  const pf = passwordField(null, true); pwSection.appendChild(pf.wrap);
+  const pBtn = document.createElement('button'); pBtn.type = 'button'; pBtn.className = 'btn secondary'; pBtn.textContent = 'تغيير كلمة المرور';
+  pBtn.addEventListener('click', async () => {
+    const v = pf.input.value;
+    if (v.length < 6) { flash('كلمة المرور 6 أحرف على الأقل', true); return; }
+    pBtn.disabled = true;
+    try {
+      const d = await api({ action: 'resetPassword', targetUsername: u.username, newPassword: v });
+      if (d.success) { flash('✓ تغيّرت كلمة المرور. سلّمها للمستخدم: ' + v); pf.input.value = ''; }
+      else flash('❌ ' + (d.error || 'فشلت العملية'), true);
+    } catch (e) { flash('تعذّر الاتصال بالخادم', true); }
+    pBtn.disabled = false;
+  });
+  pwSection.appendChild(pBtn);
+
+  if (!passwordOnly) {
+    const isAdmin = u.role === 'admin';
+    // ---- name
+    const hn = document.createElement('h3'); hn.textContent = '👤 الاسم الكامل'; box.appendChild(hn);
+    const nameIn = document.createElement('input'); nameIn.type = 'text'; nameIn.value = u.fullName || ''; nameIn.maxLength = 60;
+    box.appendChild(nameIn);
+    nameIn.addEventListener('change', async () => {
+      const v = nameIn.value.trim(); if (v.length < 2 || v === u.fullName) return;
+      try { const d = await api({ action: 'updateUserProfile', targetUsername: u.username, fullName: v });
+        if (d.success) { u.fullName = v; title.textContent = 'ملف المستخدم: ' + v; flash('✓ حُفظ الاسم'); loadUsersList(); } else flash('❌ ' + (d.error || 'فشل الحفظ'), true);
+      } catch (e) { flash('تعذّر الاتصال بالخادم', true); }
+    });
+
+    const screensDiv = document.createElement('div'); screensDiv.className = 'ticks';
+    const powersDiv = document.createElement('div'); powersDiv.className = 'ticks power';
+    const comsDiv = document.createElement('div'); comsDiv.className = 'ticks';
+    const busInput = document.createElement('input'); busInput.type = 'text'; busInput.value = u.assignedBus || ''; busInput.placeholder = 'مثال: 1'; busInput.inputMode = 'numeric';
+
+    // Save the whole access state; queued so fast clicks never overwrite each other.
+    let saving = false, again = false;
+    async function saveAccess(what) {
+      if (saving) { again = true; return; }
+      saving = true; flash('… جارٍ الحفظ');
+      try {
+        const payload = { action: 'updateUserAccess', targetUsername: u.username,
+          permissions: isAdmin ? [] : ticked(screensDiv).concat(ticked(powersDiv)), committees: ticked(comsDiv) };
+        if (!isAdmin) payload.assignedBus = busInput.value.trim();
+        const d = await api(payload);
+        if (d.success) { flash('✓ ' + what + ' — يسري فوراً'); u.permissions = payload.permissions; u.assignedBus = payload.assignedBus; refreshUserRow(u); }
+        else flash('❌ ' + (d.error || 'فشل الحفظ'), true);
+      } catch (e) { flash('تعذّر الاتصال بالخادم. أعد المحاولة.', true); }
+      saving = false;
+      if (again) { again = false; saveAccess('حُفظت التعديلات'); }
+    }
+    const onTick = e => {
+      if (e.target.type !== 'checkbox') return;
+      const label = e.target.parentNode.textContent.trim();
+      saveAccess((e.target.checked ? 'أُضيفت «' : 'أُزيلت «') + label + '»');
+    };
+
+    if (isAdmin) {
+      const note = document.createElement('div'); note.className = 'hint';
+      note.textContent = 'هذا الحساب بدور «أدمن» ويملك كل الصلاحيات دائماً. يمكنك فقط تحديد لجانه.';
+      box.appendChild(note);
+    } else {
+      const h0 = document.createElement('h3'); h0.textContent = 'قوالب جاهزة'; box.appendChild(h0);
+      const presets = document.createElement('div'); presets.className = 'presets';
+      Object.keys(ROLE_PRESETS).filter(r => r !== 'admin').forEach(r => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'preset'; b.textContent = roleLabels[r];
+        b.addEventListener('click', () => {
+          renderTicks(screensDiv, screenItems(), ROLE_PRESETS[r]);
+          renderTicks(powersDiv, powerItems(), ROLE_PRESETS[r]);
+          saveAccess('طُبّق قالب «' + roleLabels[r] + '»');
+        });
+        presets.appendChild(b);
+      });
+      box.appendChild(presets);
+
+      const h1 = document.createElement('h3'); h1.textContent = '✅ الشاشات (علامة صح = تُضاف فوراً)'; box.appendChild(h1);
+      renderTicks(screensDiv, screenItems(), u.permissions || []); box.appendChild(screensDiv);
+      const h2 = document.createElement('h3'); h2.textContent = 'صلاحيات خاصة (حساسة: امنحها لأقل عدد ممكن)'; box.appendChild(h2);
+      renderTicks(powersDiv, powerItems(), u.permissions || []); box.appendChild(powersDiv);
+      const h4 = document.createElement('h3'); h4.textContent = '🚌 رقم الباص (لمشرف الباص)'; box.appendChild(h4);
+      box.appendChild(busInput);
+      screensDiv.addEventListener('change', onTick); powersDiv.addEventListener('change', onTick);
+      busInput.addEventListener('change', () => saveAccess('حُفظ رقم الباص'));
+    }
+    const h3 = document.createElement('h3'); h3.textContent = 'اللجان'; box.appendChild(h3);
+    renderTicks(comsDiv, committeeItems(), u.committees || []); box.appendChild(comsDiv);
+    comsDiv.addEventListener('change', onTick);
+  }
+
+  box.appendChild(pwSection);
+  box.appendChild(status);
+  editBox.appendChild(box);
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Update one user's line in the list without reloading everything.
+function refreshUserRow(u) {
+  const i = (usersCache || []).findIndex(x => x.username === u.username);
+  if (i !== -1) usersCache[i] = Object.assign({}, usersCache[i], u);
+  const row = document.querySelector('tr[data-user="' + CSS.escape(u.username) + '"] td:nth-child(3)');
+  if (row) row.textContent = permSummary(u) + (u.assignedBus ? ' — باص ' + u.assignedBus : '');
+}
+
+async function setActiveFor(u, active) {
+  if (!confirm((active ? 'تفعيل حساب ' : 'تعطيل حساب ') + u.fullName + '؟' + (active ? '' : '\nلن يستطيع الدخول فوراً.'))) return;
+  try {
+    const data = await api({ action: 'setUserActive', targetUsername: u.username, active: active });
+    if (!data.success) { alert(data.error || 'تعذّر التنفيذ'); return; }
+    loadUsersList();
+  } catch (e) { alert('تعذّر الاتصال'); }
+}
+
+async function unlockAccountFor(username) {
+  setMsg(usersListMsg, '', '');
+  try {
+    const data = await api({ action: 'unlockAccount', targetUsername: username });
+    if (data.success) { setMsg(usersListMsg, '✅ تم فك قفل حساب "' + username + '".', 'ok'); loadUsersList(); }
+    else setMsg(usersListMsg, '❌ ' + (data.error || 'فشلت العملية'), 'error');
+  } catch (err) {
+    setMsg(usersListMsg, 'تعذّر الاتصال بالخادم: ' + err.message, 'error');
+  }
+}
+
+// ---------------- student sheet check ----------------
+
+document.getElementById('checkSheetBtn').addEventListener('click', async () => {
+  const out = document.getElementById('sheetReport');
+  out.textContent = 'جاري الفحص...';
+  try {
+    const data = await api({ action: 'checkStudentSheet' });
+    out.innerHTML = '';
+    if (!data.success) { out.textContent = '❌ ' + (data.error || 'فشل الفحص'); return; }
+    const r = data.report;
+    const line = (text, cls) => { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = text; out.appendChild(d); };
+    line(r.ok ? '✅ الشيت سليم' : '⚠️ توجد مشاكل تحتاج إصلاحاً', r.ok ? 'good' : 'bad');
+    r.problems.forEach(p => line('• ' + p, 'bad'));
+    (r.notes || []).forEach(n => line('• ' + n));
+    if (r.total !== undefined) {
+      line('عدد الطلاب: ' + r.total);
+      Object.keys(r.perBus || {}).sort().forEach(b => line('باص ' + b + ': ' + r.perBus[b]));
+    }
+  } catch (err) {
+    out.textContent = 'تعذّر الاتصال بالخادم: ' + err.message;
+  }
+});
+
+// ---------------- startup ----------------
+
+async function loadBulletin() {
+  try {
+    const d = await api({ action: 'bulletin' });
+    if (!d.success || !d.items.length) return;
+    const list = document.getElementById('bulletinList'); list.innerHTML = '';
+    d.items.slice(0, 5).forEach(it => {
+      const row = document.createElement('div'); row.style.cssText = 'padding:8px 0;border-top:1px solid var(--sap-border, #ddd)';
+      const t = document.createElement('b'); t.textContent = (it.pinned ? '📌 ' : '') + it.title; row.appendChild(t);
+      if (it.body) { const b = document.createElement('div'); b.textContent = it.body; b.style.marginTop = '2px'; row.appendChild(b); }
+      if (it.kind === 'event' && it.startsAt) { const w = document.createElement('div'); w.className = 'hint'; w.textContent = '🕒 ' + new Date(it.startsAt).toLocaleString('ar'); row.appendChild(w); }
+      list.appendChild(row);
+    });
+    document.getElementById('bulletinCard').style.display = 'block';
+  } catch (e) { /* no bulletin: ignore */ }
+}
+
+renderHeader();
+renderTiles();
+loadBulletin();
+
+// The server is the source of truth: refresh permissions once, then draw the admin parts if allowed.
+(async function init() {
+  try {
+    const me = await api({ action: 'getMyAccess' });
+    if (me.success) {
+      permissions = me.permissions || [];
+      role = me.role || role;
+      fullName = me.fullName || fullName;
+      sessionStorage.setItem('mukhayyam_permissions', JSON.stringify(permissions));
+      sessionStorage.setItem('mukhayyam_role', role);
+      renderHeader();
+      renderTiles();
+    } else if (/EXPIRED|IDLE_TIMEOUT|REVOKED|BAD_SIGNATURE|MALFORMED|USER_NOT_FOUND|ACCOUNT_DISABLED/.test(me.error || '')) {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+      return;
+    }
+  } catch (err) { /* offline: keep what login gave us */ }
+
+  if (can('manage')) {
+    try {
+      await ensureCatalog();
+      applyPresetToNewForm();
+      renderTicks(newCommittees, committeeItems(), []);
+    } catch (err) {
+      setMsg(createMsg, '❌ ' + err.message, 'error');
+    }
+  }
+  if (can('manage') || can('support')) loadUsersList();
+})();
+</script>
+
+</body>
+</html>

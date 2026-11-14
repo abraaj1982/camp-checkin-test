@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>القائد — MUKHAYYAM</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="theme.css">
+<script src="ui.js" defer></script>
+<style>
+.kpi{flex:1 1 160px;padding:14px 16px}
+#map{height:380px;border-radius:12px;background:var(--soft);z-index:0}
+.cols{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}.c1{flex:1 1 280px;min-width:0}.c2{flex:2 1 420px;min-width:0}
+.bus{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card)}
+.brow{display:grid;grid-template-columns:90px 1fr 80px;gap:10px;align-items:center;padding:7px 0;font-size:14px}
+.pin{width:30px;height:30px;border-radius:50%;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.4);font-size:14px}
+.pin.f{background:#2E7D4F}.pin.s{background:#D4912A}.pin.o{background:#C2455A}
+</style>
+</head>
+<body>
+<div class="wrap wide">
+<header class="hdr"><div class="brand"><div class="logo">م</div><div style="min-width:0"><div class="t" id="campT"></div><div class="s" id="campS"></div></div></div><div class="tools"><a class="tool" href="hub.html" id="homeBtn" style="text-decoration:none;display:flex;align-items:center"></a><button class="tool" id="langBtn" aria-label="Language"></button><button class="tool" id="themeBtn"></button></div></header>
+<section class="hero compact"><div class="ic" aria-hidden="true">📍</div><div><h1 id="hT"></h1><p id="hS"></p></div></section>
+<div id="netbar" class="netbar" hidden></div>
+<main id="app"></main>
+</div>
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3a_DmDLkdzW6WDqImAkNLaBCocpSFK_9xsUa0MuuhoXH3WWza2zaP0JUM9_pnZIVxHQ/exec';
+const POLL_MS = 15000;
+const token = sessionStorage.getItem('mukhayyam_token');
+let perms = [];
+try { perms = JSON.parse(sessionStorage.getItem('mukhayyam_permissions') || '[]'); } catch (e) {}
+const can = k => perms.indexOf('*') !== -1 || perms.indexOf(k) !== -1;
+if (!token) location.href = 'login.html'; else if (!can('dashboard') && !can('livemap') && !can('stats')) location.href = 'hub.html';
+
+const pref = { get(k, d) { try { return localStorage.getItem('mk_pref_' + k) || d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('mk_pref_' + k, v); } catch (e) {} } };
+const T = {
+ ar: { dir: 'rtl', title: 'القائد', sub: 'متابعة المخيم مباشرة', home: 'الرئيسية', lang: 'English', dark: '🌙 داكن', light: '☀ فاتح', boarded: 'صعدوا', total: 'إجمالي الطلاب', remaining: 'لم يصعدوا بعد', withdrawn: 'منسحبون', bagsIn: 'حقائب محمّلة', bagsOut: 'حقائب منزّلة', of: 'من', map: 'تتبع الباصات مباشرة', live: 'مباشر', byBus: 'الحضور حسب الباص', bus: n => 'باص ' + n,
+  st: { boarding: 'يصعدون', departed: 'انطلق', onway: 'في الطريق', arrived: 'وصل' }, noLoc: 'لا يوجد موقع بعد', ago: s => s < 90 ? 'منذ ' + s + ' ث' : 'منذ ' + Math.round(s / 60) + ' د', lastSeen: s => 'آخر موقع ' + (s < 90 ? 'منذ ' + s + ' ث' : 'منذ ' + Math.round(s / 60) + ' د'),
+  noMap: 'تعذّر تحميل الخريطة. تظهر الحالة في القائمة.', offline: 'غير متصل. تُعرض آخر بيانات.', supervisor: 'المشرف', err: 'تعذّر تحميل البيانات.', note: 'الموقع من هاتف المشرف، ويتحدّث ما دامت شاشته مفتوحة.' },
+ en: { dir: 'ltr', title: 'Camp leader', sub: 'Live camp overview', home: 'Home', lang: 'العربية', dark: '🌙 Dark', light: '☀ Light', boarded: 'Boarded', total: 'Total students', remaining: 'Not boarded yet', withdrawn: 'Withdrawn', bagsIn: 'Bags loaded', bagsOut: 'Bags unloaded', of: 'of', map: 'Live bus tracking', live: 'Live', byBus: 'Attendance by bus', bus: n => 'Bus ' + n,
+  st: { boarding: 'Boarding', departed: 'Departed', onway: 'On the way', arrived: 'Arrived' }, noLoc: 'No location yet', ago: s => s < 90 ? s + 's ago' : Math.round(s / 60) + ' min ago', lastSeen: s => 'Last seen ' + (s < 90 ? s + 's ago' : Math.round(s / 60) + ' min ago'),
+  noMap: 'Could not load the map. Status is shown in the list.', offline: 'Offline. Showing the latest data.', supervisor: 'Supervisor', err: 'Could not load data.', note: 'Location comes from the supervisor’s phone and updates while his screen is open.' }
+};
+const X = {
+ ar: { alerts: 'تنبيهات', none: 'لا توجد تنبيهات. كل شيء طبيعي.', stale: (b, a) => `باص ${b}: لم يصل موقعه منذ ${Math.round(a / 60)} دقيقة. اتصل بالمشرف.`, missing: (b, n) => `باص ${b}: انطلق ويوجد ${n} طالب لم يُسجَّل صعودهم.`, no_report: b => `باص ${b}: لم يرسل أي حالة بعد.`, bags: (b, n) => `باص ${b}: ${n} طالب حقائبهم المحمّلة أقل من المتوقع.`, cases_open: n => `${n} بلاغ مفتوح يحتاج متابعة.`, med_urgent: n => `${n} حالة طبية عاجلة مفتوحة.`, withdraw_open: n => `${n} طلب انسحاب مفتوح.`, cases: 'البلاغات', noCases: 'لا توجد بلاغات.', ack: 'استلمت', close: 'إغلاق', ty: { student: 'طالب', bus: 'باص', lost: 'مفقود', other: 'أخرى' }, stt: { open: 'مفتوح', ack: 'قيد المتابعة', closed: 'مغلق' }, stale5: 'موقع قديم' },
+ en: { alerts: 'Alerts', none: 'No alerts. Everything looks normal.', stale: (b, a) => `Bus ${b}: no location for ${Math.round(a / 60)} min. Call the supervisor.`, missing: (b, n) => `Bus ${b}: departed with ${n} student(s) not checked in.`, no_report: b => `Bus ${b}: has not reported yet.`, bags: (b, n) => `Bus ${b}: ${n} student(s) with fewer loaded bags than expected.`, cases_open: n => `${n} open case(s) need follow-up.`, med_urgent: n => `${n} urgent medical case(s) open.`, withdraw_open: n => `${n} open withdrawal request(s).`, cases: 'Cases', noCases: 'No cases.', ack: 'Acknowledge', close: 'Close', ty: { student: 'Student', bus: 'Bus', lost: 'Lost item', other: 'Other' }, stt: { open: 'Open', ack: 'In progress', closed: 'Closed' }, stale5: 'Stale location' }
+};
+const X_ = () => X[st.lang];
+const st = { cases: [], lang: pref.get('lang', 'ar'), theme: pref.get('theme', 'light'), sum: null, live: [], err: '', fetchedAt: 0 };
+const L_ = () => T[st.lang];
+const $ = id => document.getElementById(id);
+const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const AUTH_ERR = /EXPIRED|IDLE_TIMEOUT|REVOKED|BAD_SIGNATURE|MALFORMED|USER_NOT_FOUND|ACCOUNT_DISABLED|BAD_PAYLOAD/;
+async function api(a) { const r = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: a, token: token }) }); return r.json(); }
+
+async function poll() {
+  try {
+    const [s, l, c] = await Promise.all([api('leaderSummary'), can('dashboard') || can('livemap') ? api('busLive') : Promise.resolve({ success: true, buses: [] }), api('listCases')]);
+    if (c && c.success) st.cases = c.cases;
+    for (const r of [s, l]) if (r && r.code && AUTH_ERR.test(r.code)) { sessionStorage.clear(); location.href = 'login.html'; return; }
+    if (s.success) st.sum = s; if (l.success) st.live = l.buses;
+    st.err = s.success ? '' : L_().err; st.fetchedAt = Date.now();
+  } catch (e) { st.err = ''; }
+  render();
+}
+const ageClass = a => a < 90 ? 'f' : a < 600 ? 's' : 'o';
+
+let map = null, markers = {}, mapFailed = false;
+function drawMap() {
+  const el = $('map'); if (!el) return;
+  if (typeof L === 'undefined') { mapFailed = true; el.innerHTML = '<div class="muted" style="padding:20px;text-align:center">' + esc(L_().noMap) + '</div>'; return; }
+  if (!map || map._container !== el) { map = L.map(el, { zoomControl: true }).setView([23.58, 58.4], 8); L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(map); markers = {}; }
+  const pts = [];
+  st.live.filter(b => b.lat !== null && b.lng !== null).forEach(b => {
+    const icon = L.divIcon({ className: '', html: '<div class="pin ' + ageClass(b.ageSec) + '">' + esc(b.bus) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+    if (markers[b.bus]) markers[b.bus].setLatLng([b.lat, b.lng]).setIcon(icon); else markers[b.bus] = L.marker([b.lat, b.lng], { icon: icon }).addTo(map);
+    markers[b.bus].bindTooltip(L_().bus(b.bus) + ' · ' + L_().lastSeen(b.ageSec)); pts.push([b.lat, b.lng]);
+  });
+  if (pts.length && !map._fitted) { map.fitBounds(pts, { padding: [40, 40], maxZoom: 14 }); map._fitted = true; }
+}
+function render() {
+  const l = L_(); document.documentElement.lang = st.lang; document.documentElement.dir = l.dir; document.documentElement.dataset.theme = st.theme;
+  $('hT').textContent = l.title; $('hS').textContent = l.sub; $('homeBtn').textContent = l.home; $('langBtn').textContent = l.lang; $('themeBtn').textContent = st.theme === 'light' ? l.dark : l.light; document.title = l.title + ' — MUKHAYYAM';
+  const nb = $('netbar'); if (!navigator.onLine) { nb.hidden = false; nb.className = 'netbar warn'; nb.textContent = l.offline; } else nb.hidden = true;
+  const s = st.sum; if (!s) { $('app').innerHTML = '<div class="card muted">' + (st.err || '...') + '</div>'; return; }
+  const left = s.total - s.boarded - s.withdrawn;
+  const kpi = (lab, v, n, c) => `<div class="card kpi"><div class="kl">${lab}</div><div class="kv" ${c ? `style="color:var(--${c})"` : ''}>${v}</div><div class="kl">${n || ''}</div></div>`;
+  const byBus = s.perBus.map(b => `<div class="brow"><span>${l.bus(esc(b.bus))}</span><div class="bar" style="margin:0" role="img" aria-label="${l.bus(esc(b.bus))}: ${b.boarded}/${b.total}"><i style="width:${b.total ? Math.round(b.boarded / b.total * 100) : 0}%"></i></div><span class="muted" style="text-align:end"><b style="color:var(--ink)">${b.boarded}</b> / ${b.total}</span></div>`).join('');
+  const cards = st.live.map(b => `<div class="bus"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${l.bus(esc(b.bus))}</b><span class="pill ${b.status === 'arrived' ? 'ok' : b.ageSec >= 600 ? 'bad' : 'warn'}">${esc(l.st[b.status] || b.status)}</span></div><div class="muted" style="font-size:13px;margin-top:4px">${b.boarded} ${l.of} ${b.total}${b.supervisor ? ' · ' + esc(b.supervisor) : ''}</div><div style="font-size:13px;margin-top:2px;color:var(--${b.lat === null ? 'muted' : b.ageSec >= 300 ? 'bad' : 'ok'})">${b.lat === null ? l.noLoc : (b.ageSec >= 300 ? '⚠ ' : '') + l.lastSeen(b.ageSec)}</div></div>`).join('');
+  const x = X_();
+  const amsg = a => a.type === 'stale' ? x.stale(esc(a.bus), a.ageSec) : a.type === 'missing' ? x.missing(esc(a.bus), a.missing) : a.type === 'no_report' ? x.no_report(esc(a.bus)) : a.type === 'bags' ? x.bags(esc(a.bus), a.count) : a.type === 'med_urgent' ? x.med_urgent(a.count) : a.type === 'withdraw_open' ? x.withdraw_open(a.count) : x.cases_open(a.count);
+  const alertsHtml = (s.alerts && s.alerts.length ? s.alerts.map(a => `<div class="banner ${a.level === 'bad' ? 'bad' : a.level === 'info' ? '' : 'warn'}" style="margin:0 0 6px">${amsg(a)}</div>`).join('') : `<div class="muted">${x.none}</div>`);
+  const casesHtml = st.cases.length ? st.cases.map(c => `<div class="bus" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(x.ty[c.type] || c.type)}${c.bus ? ' · ' + l.bus(esc(c.bus)) : ''}</b><span class="pill ${c.status === 'open' ? 'bad' : c.status === 'ack' ? 'warn' : 'ok'}">${esc(x.stt[c.status] || c.status)}</span></div><div style="margin:6px 0">${esc(c.text)}</div>${c.status !== 'closed' ? `<div style="display:flex;gap:8px">${c.status === 'open' ? `<button class="btn" data-case="${esc(c.id)}" data-st="ack">${x.ack}</button>` : ''}<button class="btn" data-case="${esc(c.id)}" data-st="closed">${x.close}</button></div>` : ''}</div>`).join('') : `<div class="muted">${x.noCases}</div>`;
+  $('app').innerHTML = `${st.err ? `<div class="banner bad">${esc(st.err)}</div>` : ''}
+  <section class="card"><h2 class="h2" style="margin-bottom:8px">${x.alerts}</h2>${alertsHtml}</section>
+  <div class="kpis">${kpi(l.boarded, s.boarded, l.of + ' ' + s.total, 'ok')}${kpi(l.remaining, left, '', left ? 'warn' : '')}${kpi(l.withdrawn, s.withdrawn, '', s.withdrawn ? 'bad' : '')}${kpi(l.bagsIn, s.bags.loaded)}${kpi(l.bagsOut, s.bags.unloaded)}</div>
+  <div class="cols"><section class="card c2"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><h2 class="h2">${l.map}</h2><span class="pill ok">● ${l.live}</span></div><div id="map"></div><div class="muted" style="font-size:12.5px;margin-top:8px">${l.note}</div></section>
+  <aside class="c1" style="display:flex;flex-direction:column;gap:10px">${cards || ''}</aside></div>
+  <section class="card"><h2 class="h2" style="margin-bottom:6px">${l.byBus}</h2>${byBus}</section>
+  <section class="card"><h2 class="h2" style="margin-bottom:8px">${x.cases}</h2>${casesHtml}</section>`;
+  drawMap();
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest && e.target.closest('[data-case]'); if (!b || !can('dashboard') && !can('manage')) return;
+  b.disabled = true;
+  try { await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'updateCase', token: token, id: b.dataset.case, status: b.dataset.st }) }); } catch (err) {}
+  poll();
+});
+$('langBtn').onclick = () => { st.lang = st.lang === 'ar' ? 'en' : 'ar'; pref.set('lang', st.lang); render(); };
+$('themeBtn').onclick = () => { st.theme = st.theme === 'light' ? 'dark' : 'light'; pref.set('theme', st.theme); render(); };
+window.addEventListener('online', poll); window.addEventListener('offline', render);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+setInterval(() => { if (!document.hidden && navigator.onLine) poll(); }, POLL_MS);
+render(); poll();
+</script>
+</body></html>
